@@ -44,7 +44,7 @@ class AdDetail extends Component {
       <div className="modal">
         <div className="modal-content">
           <span className="close" onClick={onClose}>&times;</span>
-          <h3>{ad.name}</h3>
+          <h3 className='text-xl'>{ad.name}</h3>
           {riders.map(rider => (
               <Link to='/maps'
                 state={{ rider:rider , ad:ad }} ><h5>{rider.fn} {rider.ln}</h5></Link>

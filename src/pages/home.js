@@ -1,9 +1,12 @@
 
-import '../App.css';
-import { Component } from 'react';
-import { getFirestore, collection, getDocs } from 'firebase/firestore/lite'; // Import necessary Firestore functions
+
+import { Component,useEffect,useState } from 'react';
+import { getFirestore, collection, getDocs,query,where } from 'firebase/firestore/lite'; // Import necessary Firestore functions
 import { app } from '../firebase';
 import AdDetail from '../AdDetail';
+import { auth} from '../firebase';
+
+
 
 class Home extends Component {
   constructor(props){
@@ -18,6 +21,7 @@ class Home extends Component {
     var adsList=[];
     const db=getFirestore(app);
     const adsCol=collection(db,'ad');
+    //const adsQuery = query(adsCol, where('acc_id', '==', 'tk4RLbkFJVTeN15mCJoEG4oJ5ck2'));
     const adSnapShot=await getDocs(adsCol);
     adSnapShot.forEach(doc => {
       let ad=doc.data();
@@ -41,17 +45,29 @@ class Home extends Component {
   handleClose = () => {
     this.setState({ selectedAd: null }); // Close the modal
   };
+  async handleLogOut(){
+    try{
+      await auth.signOut();
+      window.location.href="/";
+    }catch(err){
+  
+    }
+  }
   render(){
     const { ads, selectedAd } = this.state;
+    
     return (
       <div className="App">
-        <div className="ads-list">
+        <div className='inline-flex ' >
+        <div className="ads-list grid grid-cols-1 inline-block">
           {ads.map(ad => (
-            <div key={ad.id} className="ad-item" onClick={() => this.handleAdClick(ad)}>
-              <h3>{ad.name}</h3>
+            <div key={ad.id} className="ad-item p-2 rounded-10 bg-white shadow-lg gap-2 text-center" onClick={() => this.handleAdClick(ad)}>
+              <h3 className="text-2xl">{ad.name}</h3>
               <p>{ad.description}</p> {/* Preview description or other info */}
             </div>
           ))}
+          
+        </div>
         </div>
 
         {selectedAd && (
