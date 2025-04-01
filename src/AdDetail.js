@@ -47,7 +47,7 @@ class AdDetail extends Component {
           <h3 className='text-xl'>{ad.name}</h3>
           {riders.map(rider => (
               <Link to='/maps'
-                state={{ rider:rider , ad:ad }} ><h5>{rider.fn} {rider.ln}</h5></Link>
+                state={{ rider:rider , ad:ad }}  ><h5>{rider.fn} {rider.ln}</h5></Link>
               
           ))}
           {/* You can add more fields here */}

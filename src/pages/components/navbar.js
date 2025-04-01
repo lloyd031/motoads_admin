@@ -21,9 +21,7 @@ const Navbar = ({ user, setUser }) => {
 
         {/* Menu for larger screens */}
         <div className="hidden md:flex space-x-4">
-          <Link to="/home" className="text-white hover:bg-red-600 px-3 py-2 rounded-md">
-            Home
-          </Link>
+          
           
 
           {/* Show Signup and Login if not logged in */}
@@ -39,6 +37,7 @@ const Navbar = ({ user, setUser }) => {
           ) : (
             <>
               {/* Show Logout when user is logged in */}
+              
               <button
                 onClick={handleLogout}
                 className="text-white hover:bg-red-600 px-3 py-2 rounded-md"
