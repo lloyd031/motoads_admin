@@ -2,7 +2,7 @@
 import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
 import { auth,db } from './firebase';
 import { Component } from 'react';
-import { doc, getDoc, getDocs, collection, orderBy,query } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, orderBy,query,onSnapshot } from 'firebase/firestore';
 import CampaignForm from './pages/components/campaignForm';
 import AdContainer from './pages/components/adListContainer';
 
@@ -12,30 +12,30 @@ class Map extends Component {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
-  
+   
   constructor(props) {
     super(props);
     this.state = {
       center: {
         lat: 9.3068,
         lng: 123.3054,
-        paths: [],
-        showForm:false,
-        showAdList:false,
-        ad:null,
-        rider:null,
-        user:null,
-        month:'',
-        day:'',
-        year:'',
-        date:'',
       },
+      paths: [],
+      showForm:false,
+      showAdList:false,
+      ad:null,
+      rider:null,
+      user:null,
+      month:'',
+      day:'',
+      year:'',
+      date:'',
     };
-    
+    this.viewTrail=false; 
   }
   
   setAd=async(adVal)=>{
-    const{month,day,year}=this.state;
+    const{paths}=this.state;
     this.setState({
       ad:adVal,
       showAdList:false,
@@ -63,14 +63,55 @@ class Map extends Component {
       month:mm,
       day:dd,
       year:yy,
-      date:''
+      date:'',
+      paths:[]
      });
+    this.viewTrail=false;
     this.fetchRecordFromDate(adVal,{mm,dd,yy});
-    
+    if (this.unsubscribeLoc) {
+      this.unsubscribeLoc(); // clean up old listener
+    }
+    this.unsubscribeLoc = this.realTimeLoc(adVal, { mm, dd, yy });
+  }
+  realTimeLoc(adVal,date){
+    const{mm,dd,yy}=date;
+    const loc = onSnapshot(collection(db, 'rider', adVal.riderId, 'assigned_ads', adVal.id, 'year', yy, 'month', mm, 'day', dd,'rides'), (snapshot) => {
+      var addedDocs = snapshot
+        .docChanges()
+        .filter(change => change.type === 'added')
+        .map(change => ({
+          lat: change.doc.data().lat,
+          lng: change.doc.data().long,
+          timestamp:change.doc.data().timestamp,
+        }));
+        if (addedDocs.length > 0 && this.viewTrail === true) {
+          this.setState(prevState => {
+            const existingPaths = prevState.paths;
+  
+            // Only include new points not already in existing paths
+            const newUniquePoints = addedDocs.filter(newPoint => {
+              return !existingPaths.some(
+                existingPoint =>
+                  existingPoint.timestamp === newPoint.timestamp 
+              );
+            });
+  
+            if (newUniquePoints.length === 0) return null;
+  
+            const newPath = [...existingPaths, ...newUniquePoints];
+            return {
+              paths: newPath,
+              center: newPath[newPath.length - 1],
+            };
+          });
+        }
+    });
+    return loc
   }
   fetchRecordFromDate=async(adVal,date)=>{
+    
     const{mm,dd,yy}=date;
-
+    
     try {
       const querySnapshot = await getDocs(query(collection(db, 'rider', adVal.riderId, 'assigned_ads', adVal.id, 'year', yy, 'month', mm, 'day', dd, 'rides'),orderBy('timestamp', 'asc')));
       //const  = await getDocs(collection(db, 'rider',(adVal.riderId),'assigned_ads',(adVal.id),'year','2025','month','April','day','9','rides'),orderBy('timestamp','asc')); // 'riders' is the collection name in Firestore
@@ -78,12 +119,13 @@ class Map extends Component {
       const pathList = querySnapshot.docs.map(doc => ({
         lat:doc.data().lat,
         lng:doc.data().long,
+        timestamp:doc.data().timestamp,
       }));
       this.setState({
         paths:pathList,
         center:pathList[pathList.length-1]
       });
-      
+      this.viewTrail=true;
         // Set the riders state with the fetched data
     } catch (error) {
       console.error('Errr fetching riders:', error);
@@ -100,8 +142,12 @@ class Map extends Component {
       month:mm,
       year:yy,
     });
+    this.viewTrail=false;
     this.fetchRecordFromDate(ad,{mm,dd,yy});
-    
+    if (this.unsubscribeLoc) {
+      this.unsubscribeLoc(); // clean up old listener
+    }
+    this.unsubscribeLoc = this.realTimeLoc(ad, { mm, dd, yy });
   } 
   setShowForm(){
     this.setState({
@@ -145,8 +191,9 @@ class Map extends Component {
     const {user, center,paths , showForm,ad,rider, showAdList,month,day,year,date} = this.state;
 
     // Replace with your own Google Maps API key
-    const googleMapsApiKey = 'AIzaSyA9VaCuSLwB_-V0gfXv1zBtX5jqdzzv2rc';
-
+    const googleMapsApiKey = 'AIzaSyDqpI6IBWBFv1FJ8B21WASbZV5ZgKUHTy8';
+    //
+    //AIzaSyA9VaCuSLwB_-V0gfXv1zBtX5jqdzzv2rc
     const mapContainerStyle = {
       width: '100%',
       height: '100%',
@@ -170,9 +217,9 @@ class Map extends Component {
                 <Polyline
                   path={paths} // Path to draw the polyline
                   options={{
-                    strokeColor: '#e3e0e0', // Polyline color
+                    strokeColor: '#ef4444', // Polyline color
                     strokeOpacity: 1.0, // Full opacity
-                    strokeWeight: 6, // Line thickness
+                    strokeWeight: 8, // Line thickness
                   }}
                 />
               </GoogleMap>
@@ -220,8 +267,8 @@ class Map extends Component {
           </div>
 
           <div className='flex gap-4'>
-            <button className='p-1 pl-4 pr-4 rounded-[20px] bg-white shadow-lg' onClick={()=>{this.setShowForm()}}>Start campaign +</button>
-            <button className='p-1 pl-4 pr-4 rounded-[20px] bg-white shadow-lg' onClick={()=>{this.setShowAdList()}}>View campaign/s</button>
+            <button className='p-1 pl-4 pr-4 rounded-[20px] bg-white shadow-lg text-red-500 ' onClick={()=>{this.setShowForm()}}>Start campaign +</button>
+            <button className='p-1 pl-4 pr-4 rounded-[20px]  shadow-lg bg-red-500 text-white' onClick={()=>{this.setShowAdList()}}>View campaign/s</button>
           </div>
           
         </div>
