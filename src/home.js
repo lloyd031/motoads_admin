@@ -1,13 +1,18 @@
 
 import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
-import { auth,db } from '../firebase';
+import { auth,db } from './firebase';
 import { Component } from 'react';
 import { doc, getDoc, getDocs, collection, orderBy,query } from 'firebase/firestore';
-import CampaignForm from './components/campaignForm';
-import AdContainer from './components/adListContainer';
+import CampaignForm from './pages/components/campaignForm';
+import AdContainer from './pages/components/adListContainer';
 
 
 class Map extends Component {
+   monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
   constructor(props) {
     super(props);
     this.state = {
@@ -19,12 +24,18 @@ class Map extends Component {
         showAdList:false,
         ad:null,
         rider:null,
-        user:null
+        user:null,
+        month:'',
+        day:'',
+        year:'',
+        date:'',
       },
     };
+    
   }
   
   setAd=async(adVal)=>{
+    const{month,day,year}=this.state;
     this.setState({
       ad:adVal,
       showAdList:false,
@@ -44,26 +55,54 @@ class Map extends Component {
     } catch (error) {
       console.error('Error fetching riders:', error);
     } 
-      
-    try {
-          const querySnapshot = await getDocs(query(collection(db, 'rider', adVal.riderId, 'assigned_ads', adVal.id, 'year', '2025', 'month', 'April', 'day', '9', 'rides'),orderBy('timestamp', 'asc')));
-          //const  = await getDocs(collection(db, 'rider',(adVal.riderId),'assigned_ads',(adVal.id),'year','2025','month','April','day','9','rides'),orderBy('timestamp','asc')); // 'riders' is the collection name in Firestore
-          const pathList = querySnapshot.docs.map(doc => ({
-            lat:doc.data().lat,
-            lng:doc.data().long,
-          }));
-          this.setState({
-            paths:pathList,
-            center:pathList[pathList.length-1]
-          });
-          
-            // Set the riders state with the fetched data
-        } catch (error) {
-          console.error('Error fetching riders:', error);
-        }
-    
+    const today=new Date();
+    const mm=this.monthNames[today.getMonth()];
+    const dd=today.getDate().toString();
+    const yy=today.getFullYear().toString();
+    this.setState({ 
+      month:mm,
+      day:dd,
+      year:yy,
+      date:''
+     });
+    this.fetchRecordFromDate(adVal,{mm,dd,yy});
     
   }
+  fetchRecordFromDate=async(adVal,date)=>{
+    const{mm,dd,yy}=date;
+
+    try {
+      const querySnapshot = await getDocs(query(collection(db, 'rider', adVal.riderId, 'assigned_ads', adVal.id, 'year', yy, 'month', mm, 'day', dd, 'rides'),orderBy('timestamp', 'asc')));
+      //const  = await getDocs(collection(db, 'rider',(adVal.riderId),'assigned_ads',(adVal.id),'year','2025','month','April','day','9','rides'),orderBy('timestamp','asc')); // 'riders' is the collection name in Firestore
+      
+      const pathList = querySnapshot.docs.map(doc => ({
+        lat:doc.data().lat,
+        lng:doc.data().long,
+      }));
+      this.setState({
+        paths:pathList,
+        center:pathList[pathList.length-1]
+      });
+      
+        // Set the riders state with the fetched data
+    } catch (error) {
+      console.error('Errr fetching riders:', error);
+    }
+  }
+  handleChange = (e) => {
+    const{ad}=this.state;
+    const dateObj = new Date(e.target.value);
+    const dd = dateObj.getDate().toString();
+    const mm = this.monthNames[dateObj.getMonth()];
+    const yy = dateObj.getFullYear().toString();
+    this.setState({
+      day:dd,
+      month:mm,
+      year:yy,
+    });
+    this.fetchRecordFromDate(ad,{mm,dd,yy});
+    
+  } 
   setShowForm(){
     this.setState({
       showForm:true
@@ -84,17 +123,26 @@ class Map extends Component {
       showForm:false
     });
   }
+  
   // Listen to auth state changes
    componentDidMount() {
+    
+    var today=new Date();
     auth.onAuthStateChanged((user) => {
-      this.setState({ user });
+      this.setState({ 
+        user,
+        month:this.monthNames[today.getMonth()],
+        day:today.getDate().toString(),
+        year:today.getFullYear().toString()
+       });
     });
+    
   }
    
-
+  
   // Set the center and paths from state
   render() {
-    const {user, center,paths , showForm,ad,rider, showAdList} = this.state;
+    const {user, center,paths , showForm,ad,rider, showAdList,month,day,year,date} = this.state;
 
     // Replace with your own Google Maps API key
     const googleMapsApiKey = 'AIzaSyA9VaCuSLwB_-V0gfXv1zBtX5jqdzzv2rc';
@@ -149,7 +197,7 @@ class Map extends Component {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                 </svg>
-                <h2>Today</h2>
+                <h2>{month} {day} {year}</h2>
               </div>
               <div className='inline-flex gap-2'>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
@@ -162,6 +210,10 @@ class Map extends Component {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-4">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                 </svg>
+              
+              </div>
+              <div className='inline-flex gap-6 items-center'>
+              {ad && (<input type="date" value={date} onChange={this.handleChange} />)}
               </div>
               
             </div>

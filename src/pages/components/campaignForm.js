@@ -44,7 +44,7 @@ const CampaignForm=({hideShowForm, uid})=>{
       <div className='w-full h-full bg-black bg-opacity-50 absolute flex items-center justify-center'>
           <div className=' w-[400px] p-4 bg-white rounded-[10px]'>
               <div className='flex justify-between items-center'>
-                <h1 className='text-xl'>Create campaign {uid}</h1>
+                <h1 className='text-xl'>Create campaign</h1>
                 <svg onClick={hideShowForm} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6" >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>

@@ -15,7 +15,7 @@ const LoginForm = () => {
         const user=auth.currentUser;
         if(user){
             toast.success("Login success!",{position:'top-center'});
-            window.location.href="/#/home";
+            window.location.href="/home";
         }
     }catch(err){
         toast.error("Login error!",{position:'top-center'});

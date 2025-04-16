@@ -1,4 +1,4 @@
-import { collection, getDocs, where } from 'firebase/firestore';
+import { collection, getDocs, where,query } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useEffect, useState } from "react";
 const AdContainer=({setHideAdList,uid,setAd})=>{
@@ -7,7 +7,7 @@ const AdContainer=({setHideAdList,uid,setAd})=>{
     useEffect(() => {
             const fetchCampaign = async () => {
               try {
-                const querySnapshot = await getDocs(collection(db, 'ad'),where('userId', '===', {uid})); // 'riders' is the collection name in Firestore
+                const querySnapshot = await getDocs(query(collection(db, 'ad'),where('userId', '==', uid))); // 'riders' is the collection name in Firestore
                 const adList = querySnapshot.docs.map(doc => ({
                   id: doc.id,    // Document ID
                   ...doc.data(), // Document data
